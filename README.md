@@ -3,7 +3,7 @@
 ScanCLI is a multi-threaded command-line based ethical hacking tool built in Python.  
 It performs automated security testing including:
 
- https://github.com/Vedansh-max/Automated-Web-Application-Vulnerability-Scanner
+https://github.com/Vedansh-max/ScanCLI
 
 - Web crawling
 - Port scanning (Nmap + socket fallback)
@@ -49,8 +49,8 @@ project/
 ## ⚙️ Installation
 
 ### 1. Clone the project
-git clone https://github.com/Vedansh-max/Automated-Web-Application-Vulnerability-Scanner.git
-cd Automated-Web-Application-Vulnerability-Scanner
+git clone https://github.com/Vedansh-max/ScanCLI
+cd ScanCLI
 
 ### 2. Install dependencies
 
