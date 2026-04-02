@@ -6,7 +6,7 @@ from collections import deque
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 class Crawler:
-    def __init__(self, base_url, max_threads=10, max_pages=20, timeout=5):
+    def __init__(self, base_url, max_threads=10, max_pages=20, timeout=5,verbose=False):
 
         self.base_url = base_url.rstrip("/")
         self.max_threads = max_threads
