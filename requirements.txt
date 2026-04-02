@@ -1,0 +1,7 @@
+requests
+beautifulsoup4
+python-nmap
+rich
+click
+tabulate
+colorama
