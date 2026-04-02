@@ -1,98 +1,91 @@
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
-import threading
-from collections import deque
-from concurrent.futures import ThreadPoolExecutor, as_completed
+
 
 class Crawler:
-    def __init__(self, base_url, max_threads=10, max_pages=20, timeout=5,verbose=False):
-
+    def __init__(self, base_url, max_pages=20, timeout=5, verbose=False):
         self.base_url = base_url.rstrip("/")
-        self.max_threads = max_threads
         self.max_pages = max_pages
         self.timeout = timeout
+        self.verbose = verbose
 
         self.visited = set()
         self.internal_links = set()
-        self.lock = threading.Lock()
+
         self.domain = urlparse(self.base_url).netloc
-        self.queue = deque([self.base_url])
+        self.queue = [self.base_url]
 
-    
-    # Check if URL is internal
+    # ================= CHECK INTERNAL =================
     def is_internal(self, url):
-        parsed = urlparse(url)
-        return parsed.netloc == self.domain
+        return urlparse(url).netloc == self.domain
 
-    
-    # Normalize URL (remove fragments)
+    # ================= NORMALIZE =================
     def normalize_url(self, url):
         parsed = urlparse(url)
-        clean = parsed.scheme + "://" + parsed.netloc + parsed.path
+        clean = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
+
         if parsed.query:
-            clean += "?" + parsed.query
+            clean += f"?{parsed.query}"
+
         return clean.rstrip("/")
 
-    
-    # Extract links from a page
-    def extract_links_from_page(self, url):
+    # ================= EXTRACT LINKS =================
+    def extract_links(self, url):
         links = []
+
         try:
             response = requests.get(url, timeout=self.timeout)
+
             if "text/html" not in response.headers.get("Content-Type", ""):
                 return []
-            soup = BeautifulSoup(response.text, "html.parser")
-            for a_tag in soup.find_all("a", href=True):
-                href = a_tag['href']
 
-                # Skip javascript/mailto links
+            soup = BeautifulSoup(response.text, "html.parser")
+
+            for a_tag in soup.find_all("a", href=True):
+                href = a_tag["href"]
+
                 if href.startswith("javascript:") or href.startswith("mailto:"):
                     continue
 
                 absolute = urljoin(url, href)
                 normalized = self.normalize_url(absolute)
+
                 if self.is_internal(normalized):
                     links.append(normalized)
-        except requests.RequestException:
-            pass
+
+        except requests.RequestException as e:
+            if self.verbose:
+                print(f"[!] Error fetching {url}: {e}")
+
         return links
 
-    
-    # Worker function for threading
-    def _crawl_worker(self):
-        while True:
-            with self.lock:
-                if not self.queue or len(self.visited) >= self.max_pages:
-                    return
-                current_url = self.queue.popleft()
-                if current_url in self.visited:
-                    continue
-                self.visited.add(current_url)
-            # Fetch links
-            links = self.extract_links_from_page(current_url)
-            with self.lock:
-                for link in links:
-                    if link not in self.visited and link not in self.queue:
-                        self.queue.append(link)
-                self.internal_links.update(links)
-
-    
-    # Public scan method
-    def scan(self, verbose=False):
-        """
-        Run the crawler and return all internal links
-        """
-
-        if verbose:
+    # ================= MAIN SCAN =================
+    def scan(self):
+        if self.verbose:
             print(f"[+] Starting Crawl on {self.base_url}")
 
-        with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
-            futures = [executor.submit(self._crawl_worker) for _ in range(self.max_threads)]
-            for future in as_completed(futures):
-                future.result()
+        while self.queue and len(self.visited) < self.max_pages:
 
-        if verbose:
-            print(f"[✓] Crawl Completed. Total URLs: {len(self.internal_links)}")
+            current_url = self.queue.pop(0)
+
+            if current_url in self.visited:
+                continue
+
+            if self.verbose:
+                print(f"[CRAWLING] {current_url}")
+
+            self.visited.add(current_url)
+
+            links = self.extract_links(current_url)
+
+            for link in links:
+                if link not in self.visited and link not in self.queue:
+                    self.queue.append(link)
+
+            self.internal_links.update(links)
+
+        if self.verbose:
+            print(f"[✓] Crawl Completed → {len(self.internal_links)} URLs")
 
         return list(self.internal_links)
