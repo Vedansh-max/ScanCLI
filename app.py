@@ -1,5 +1,4 @@
 import argparse
-import threading
 from scanner.crawler import Crawler
 from scanner.portscan import PortScanner
 from scanner.sqli import SQLiScanner
@@ -22,60 +21,41 @@ class ScannerEngine:
             "xss": []
         }
 
-        self.status = "Initializing..."
-        self.progress = 0
-        self.lock = threading.Lock()
-
-    # ================= HELPERS =================
-    def update_status(self, message):
-        with self.lock:
-            self.status = message
-        if self.verbose:
-            print(f"[STATUS] {message}")
-
-    def update_progress(self, value):
-        with self.lock:
-            self.progress = value
-
     # ================= MODULES =================
     def run_crawler(self):
-        self.update_status("Running Crawler...")
-        crawler = Crawler(self.target, verbose=self.verbose)
-        self.results["crawler"] = crawler.scan(verbose=self.verbose)
+        print("[+] Running Crawler...")
+        crawler = Crawler(self.target,timeout=600, verbose=self.verbose)
+        self.results["crawler"] = crawler.scan()
 
     def run_portscanner(self):
-        self.update_status("Scanning Ports...")
-        scanner = PortScanner(self.target, mode=self.port_mode, verbose=self.verbose)
+        print("[+] Scanning Ports...")
+        scanner = PortScanner(self.target, mode=self.port_mode,timeout=600, verbose=self.verbose)
         self.results["ports"] = scanner.scan()
 
     def run_sqli(self):
         if not self.results["crawler"]:
             self.run_crawler()
 
-        self.update_status("Testing SQL Injection...")
-        sqli = SQLiScanner(self.results["crawler"], verbose=self.verbose)
+        print("[+] Testing SQL Injection...")
+        sqli = SQLiScanner(self.results["crawler"],timeout=600, verbose=self.verbose)
         self.results["sqli"] = sqli.scan()
 
     def run_xss(self):
         if not self.results["crawler"]:
             self.run_crawler()
 
-        self.update_status("Testing XSS...")
-        xss = XSSScanner(self.results["crawler"], verbose=self.verbose)
+        print("[+] Testing XSS...")
+        xss = XSSScanner(self.results["crawler"],timeout=600, verbose=self.verbose)
         self.results["xss"] = xss.scan()
 
     # ================= MAIN =================
     def run_all(self):
 
         if not self.scan_types:
-            self.update_status("No scan selected")
-            self.update_progress(100)
+            print("[-] No scan selected")
             return
 
-        total_steps = len(self.scan_types)
-        step_progress = 100 // total_steps
-        current_progress = 0
-
+        # Run crawler first if needed
         if "sqli" in self.scan_types or "xss" in self.scan_types:
             if "crawler" not in self.scan_types:
                 self.run_crawler()
@@ -94,20 +74,53 @@ class ScannerEngine:
             elif scan == "xss":
                 self.run_xss()
 
-            current_progress += step_progress
-            self.update_progress(current_progress)
+        self.print_results()
 
-        self.update_progress(100)
-        self.update_status("Completed")
+    # ================= RESULTS =================
+    def print_results(self):
+        print("\n========== RESULTS ==========\n")
+
+        # CRAWLER
+        print("[CRAWLER]")
+        if self.results["crawler"]:
+            print(f"Found {len(self.results['crawler'])} URLs")
+            for url in self.results["crawler"][:10]:
+                print(" -", url)
+        else:
+            print("No URLs found")
+
+        # PORTS
+        print("\n[PORT SCAN]")
+        if self.results["ports"]:
+            for port, data in self.results["ports"].items():
+                print(f"{port}/tcp → {data}")
+        else:
+            print("No open ports found")
+
+        # SQLi
+        print("\n[SQLi]")
+        if self.results["sqli"]:
+            for v in self.results["sqli"]:
+                print(f"{v['parameter']} → {v['url']}")
+        else:
+            print("No SQL Injection vulnerabilities found")
+
+        # XSS
+        print("\n[XSS]")
+        if self.results["xss"]:
+            for v in self.results["xss"]:
+                print(f"{v['parameter']} → {v['url']}")
+        else:
+            print("No XSS vulnerabilities found")
 
 
 # ================= CLI =================
 def main():
     parser = argparse.ArgumentParser(
-        description="ScanCLI - Automated Web Application Vulnerability Scanner"
+        description="ScanCLI - Web Vulnerability Scanner"
     )
 
-    parser.add_argument("target", help="Target URL (e.g., http://example.com)")
+    parser.add_argument("target", help="Target URL")
 
     parser.add_argument(
         "--scan",
@@ -120,19 +133,17 @@ def main():
     parser.add_argument(
         "--port-mode",
         choices=["fast", "normal", "deep"],
-        default="fast",
-        help="Port scan mode"
+        default="fast"
     )
 
     parser.add_argument(
         "--verbose",
-        action="store_true",
-        help="Enable detailed output"
+        action="store_true"
     )
 
     args = parser.parse_args()
 
-    print("\n🔥 ScanCLI - Starting Scan 🔥\n")
+    print("\n🔥 ScanCLI Started 🔥\n")
 
     scanner = ScannerEngine(
         target=args.target,
@@ -141,32 +152,7 @@ def main():
         verbose=args.verbose
     )
 
-    thread = threading.Thread(target=scanner.run_all)
-    thread.start()
-
-    while thread.is_alive():
-        print(f"[{scanner.progress}%] {scanner.status}")
-        thread.join(1)
-
-    print("\n✅ Scan Completed!\n")
-
-    # ================= RESULTS =================
-    print("Target:", scanner.target)
-
-    if scanner.results["ports"]:
-        print("\n[PORTS]")
-        for port, data in scanner.results["ports"].items():
-            print(f"{port} → {data}")
-
-    if scanner.results["sqli"]:
-        print("\n[SQLi Vulnerabilities]")
-        for v in scanner.results["sqli"]:
-            print(v)
-
-    if scanner.results["xss"]:
-        print("\n[XSS Vulnerabilities]")
-        for v in scanner.results["xss"]:
-            print(v)
+    scanner.run_all()
 
 
 if __name__ == "__main__":
