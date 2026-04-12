@@ -1,0 +1,28 @@
+{
+  "target": "http://127.0.0.1:8080",
+  "crawler": [],
+  "ports": {
+    "135": {
+      "state": "open",
+      "service": "msrpc",
+      "method": "nmap"
+    },
+    "445": {
+      "state": "open",
+      "service": "microsoft-ds",
+      "method": "nmap"
+    },
+    "3306": {
+      "state": "open",
+      "service": "mysql",
+      "method": "nmap"
+    },
+    "5000": {
+      "state": "open",
+      "service": "upnp",
+      "method": "nmap"
+    }
+  },
+  "sqli": [],
+  "xss": []
+}

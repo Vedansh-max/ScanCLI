@@ -1,0 +1,30 @@
+{
+  "target": "http://127.0.0.1:8766",
+  "crawler": [
+    "http://127.0.0.1:8766/product?id=1",
+    "http://127.0.0.1:8766/search?q=hello"
+  ],
+  "ports": {},
+  "sqli": [
+    {
+      "parameter": "id",
+      "payload": "'",
+      "url": "http://127.0.0.1:8766/product?id=1%27",
+      "type": "error-based"
+    }
+  ],
+  "xss": [
+    {
+      "parameter": "id",
+      "payload": "<svg/onload=alert(1)>",
+      "url": "http://127.0.0.1:8766/product?id=%3Csvg%2Fonload%3Dalert%281%29%3E",
+      "type": "reflected"
+    },
+    {
+      "parameter": "q",
+      "payload": "\"<script>alert(1)</script>",
+      "url": "http://127.0.0.1:8766/search?q=%22%3Cscript%3Ealert%281%29%3C%2Fscript%3E",
+      "type": "reflected"
+    }
+  ]
+}

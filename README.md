@@ -1,153 +1,80 @@
-# 🔥 ScanCLI - Ethical Hacking CLI Tool
+# ScanCLI
 
-ScanCLI is a multi-threaded command-line based ethical hacking tool built in Python.  
-It performs automated security testing including:
+ScanCLI is a Python command-line scanner for authorized web security testing. It combines crawling, port scanning, and basic web vulnerability checks in one workflow so you can run quick educational assessments from a terminal.
 
-https://github.com/Vedansh-max/ScanCLI
+## Features
 
-- Web crawling
-- Port scanning (Nmap + socket fallback)
-- SQL Injection detection
-- XSS vulnerability detection
+- Internal link crawling for target discovery
+- Port scanning with Nmap and socket fallback
+- Basic SQL injection error detection
+- Basic reflected XSS detection using baseline comparison
+- JSON export for scan results
+- Configurable timeout, page limits, and custom User-Agent
+- Verbose and quiet modes for cleaner terminal usage
 
----
+## Requirements
 
-## 🚀 Features
+- Python 3.10+
+- pip
+- Nmap optional but recommended for richer port scan results
 
-- ⚡ Fast multi-threaded scanning
-- 🔍 Intelligent crawler (internal links only)
-- 🛡 SQL Injection detection (error-based)
-- 💉 XSS detection (reflected)
-- 🌐 Port scanning using Nmap + fallback
-- 📊 CLI-based output (Kali Linux ready)
+## Installation
 
----
-
-## 📁 Project Structure
-project/
-│
-├── cli.py # CLI entry point
-├── scanner_engine.py # Core controller
-│
-├── scanner/
-│ ├── init.py
-│ ├── crawler.py
-│ ├── portscan.py
-│ ├── sqli.py
-│ ├── xss.py
-│
-├── payloads/
-│ ├── sqli.txt
-│ ├── xss.txt
-│
-├── requirements.txt
-└── README.md
-
-
----
-
-## ⚙️ Installation
-
-### 1. Clone the project
-git clone https://github.com/Vedansh-max/ScanCLI
+```bash
+git clone https://github.com/Vedansh-max/ScanCLI.git
 cd ScanCLI
-
-### 2. Install dependencies
-
 pip install -r requirements.txt
+```
 
+## Usage
 
-### 3. Install Nmap (Required)
+```bash
+python app.py <target> --scan <modules> [options]
+```
 
-sudo apt install nmap
+## Examples
 
+Run a crawl and SQLi scan:
 
----
+```bash
+python app.py http://testphp.vulnweb.com --scan crawler sqli
+```
 
-## 🧠 Usage
+Run all modules with JSON output:
 
-### Basic command:
+```bash
+python app.py https://example.com --scan crawler port sqli xss --output reports/scan.json
+```
 
+Run a deeper port scan with a custom timeout:
 
-python cli.py <target> --scan <modules>
+```bash
+python app.py https://example.com --scan port --port-mode deep --timeout 20
+```
 
+## Options
 
----
+- `--scan`: one or more modules from `crawler`, `port`, `sqli`, `xss`
+- `--port-mode`: `fast`, `normal`, or `deep`
+- `--timeout`: request and scan timeout in seconds
+- `--max-pages`: maximum number of internal pages to crawl
+- `--user-agent`: custom HTTP User-Agent string
+- `--output`: write scan results to a JSON file
+- `--verbose`: print detailed progress logs
+- `--quiet`: minimize progress logs and show the final summary
 
-### Examples:
+## Output
 
-#### Crawl + SQLi scan
+ScanCLI prints a summary to the terminal and can optionally write structured JSON output for later review or automation.
 
-python cli.py http://testphp.vulnweb.com --scan crawler sqli
+## Ethical Use
 
+Use this tool only against systems you own or are explicitly authorized to test. Do not scan third-party systems without permission.
 
-#### Full scan
+## Roadmap
 
-python cli.py http://example.com --scan crawler port sqli xss
-
-
-#### Port scan (deep)
-
-python cli.py http://example.com --scan port --port-mode deep
-
-
----
-
-## ⚡ Available Scan Modules
-
-| Module   | Description                  |
-|---------|------------------------------|
-| crawler | Finds internal URLs          |
-| port    | Scans open ports             |
-| sqli    | Detects SQL Injection        |
-| xss     | Detects XSS vulnerabilities  |
-
----
-
-## 🔧 Options
-
-
---scan Select scan modules
---port-mode fast / normal / deep
-
-
----
-
-## 📊 Sample Output
-
-
-[+] Scanning example.com
-[✓] Found 3 open ports
-
-[VULN] SQLi → id parameter vulnerable
-[VULN] XSS → search parameter vulnerable
-
-
----
-
-## ⚠️ Disclaimer
-
-This tool is developed for educational and ethical testing purposes only.  
-Do NOT use this tool on systems without proper authorization.
-
----
-
-## 🧑‍💻 Author
-
-- Vedansh Sharma
-
----
-
-## ⭐ Future Improvements
-
-- JSON output export
-- GUI version
-- Advanced payloads
-- Authentication bypass testing
-- Subdomain scanning
-
----
-
-## 🏁 Final Note
-
-This project is designed to simulate real-world penetration testing workflo
+- richer HTML reporting
+- better service fingerprinting
+- improved crawler depth and filtering rules
+- tests and CI
+- plugin-style module expansion
